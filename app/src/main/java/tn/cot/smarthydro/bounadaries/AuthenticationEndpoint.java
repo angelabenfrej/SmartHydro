@@ -1,19 +1,20 @@
 package tn.cot.smarthydro.bounadaries;
 
+
 import jakarta.ejb.EJBException;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.json.JSONObject;
 import tn.cot.smarthydro.entities.User;
 import tn.cot.smarthydro.services.UserServices;
 import tn.cot.smarthydro.utils.Oauth2Pkce;
 
-@Path("/")
+@Path("/authenticate")
 public class AuthenticationEndpoint {
 
     @Inject
@@ -22,26 +23,25 @@ public class AuthenticationEndpoint {
     Oauth2Pkce oauth2Pkce;
 
     @POST
-    @Path("/authenticate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response signIn(String json){
-        JSONObject obj = new JSONObject(json);
-        String email=obj.getString("email");
-        String password=obj.getString("password");
-        String clientId=obj.getString("clientId");
-        if(email == null || password == null || clientId == null){
-            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("{\"message\":\"Invalid Credentials!\"}").build();
+    public Response authenticate(@FormParam("email") String email, @FormParam("password") String password, @CookieParam("XSS-Cookie") Cookie xssCookie ) {
+        if(email == null || password == null || xssCookie == null){
+            return Response.status(Response.Status.NOT_ACCEPTABLE)
+                    .entity("{\"message\":\"Invalid Credentials!\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
         try {
             User AttemptedUser  = userServices.authenticateUser(email,password);
-            return Response.ok()
-                    .entity("{\"AuthorizationCode\":\""+oauth2Pkce.generateAuthorizationCode(clientId,AttemptedUser)+"\"}") //return authorization code
+            var state = xssCookie.getValue();
+            return Response.status(Response.Status.FOUND)
+                    .entity("{\"AuthorizationCode\":\"" + oauth2Pkce.generateAuthorizationCode(state, AttemptedUser) + "\", \"state\":\"" + state + "\"}")
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (EJBException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity("{\"message\":\""+e.getMessage()+"\"}").build();
+                    .entity("{\"message\":\""+e.getMessage()+"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
     }
-
 }

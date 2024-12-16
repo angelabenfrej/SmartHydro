@@ -6,6 +6,7 @@ import jakarta.json.Json;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import tn.cot.smarthydro.enums.Role;
 import tn.cot.smarthydro.security.JwtManager;
@@ -21,12 +22,11 @@ public class OAuthTokenEndpoint {
     JwtManager jwtManager;
     @Inject
     Oauth2Pkce oauth2Pkce;
-
     @GET
     public Response generateToken(@QueryParam("authorization_code") String authorizationCode,
                                   @QueryParam("code_verifier")String codeVerifier){
-        try {
 
+        try {
             Map<String, Object> cred = oauth2Pkce.CheckChallenge(authorizationCode, codeVerifier);
             String tenantId = (String) cred.get("tenantId");
             String subject = (String) cred.get("subject");
@@ -42,10 +42,13 @@ public class OAuthTokenEndpoint {
                             .add("tokenType", "Bearer")
                             .add("expiresIn", 1020)
                             .build())
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         } catch (Exception e) {
-            return Response.serverError().entity("{\"message\":\""+e.getMessage()+"\"}").build();
+            return Response.serverError()
+                    .entity("{\"message\":\""+e.getMessage()+"\"}")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
-
     }
 }

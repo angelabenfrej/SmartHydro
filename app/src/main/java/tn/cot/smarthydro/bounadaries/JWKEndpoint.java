@@ -1,7 +1,7 @@
 package tn.cot.smarthydro.bounadaries;
 
-import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
+import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -14,7 +14,7 @@ import tn.cot.smarthydro.security.JwtManager;
 @Path("/jwk")
 public class JWKEndpoint {
 
-    @EJB
+    @Inject
     private JwtManager jwtManager;
 
     @GET

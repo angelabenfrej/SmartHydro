@@ -15,13 +15,13 @@ public class Oauth2Pkce {
     private final Map<String, String> authorizationsCodes = new HashMap<>();
     private final Map<String, User> AttemptsUsers = new HashMap<>();
 
-    public void addChallenge(String clientId, String codeChallenge) {
-        challenges.put(codeChallenge, clientId);
+    public void addChallenge(String state, String codeChallenge) {
+        challenges.put(codeChallenge, state);
     }
 
-    public String generateAuthorizationCode(String clientId, User user) {
+    public String generateAuthorizationCode(String state, User user) {
         String authCode = UUID.randomUUID().toString();
-        authorizationsCodes.put(clientId, authCode);
+        authorizationsCodes.put(state, authCode);
         AttemptsUsers.put(authCode, user);
         return authCode;
     }
@@ -33,19 +33,18 @@ public class Oauth2Pkce {
         key = key.replace("/", "_").replace("+", "-");
 
         if (challenges.containsKey(key)) {
-            String clientId = challenges.get(key);
-            if (authorizationsCodes.containsKey(clientId)) {
-                if (authorizationsCodes.get(clientId).equals(code)) {
-                    authorizationsCodes.remove(clientId);
+            String state = challenges.get(key);
+            if (authorizationsCodes.containsKey(state)) {
+                if (authorizationsCodes.get(state).equals(code)) {
+                    authorizationsCodes.remove(state);
                     challenges.remove(key);
                     User attemptedUser = AttemptsUsers.remove(code);
                     if (attemptedUser != null) {
-                        String tenantId = attemptedUser.getTenantId();
                         String subject = attemptedUser.getEmail();
                         String approvedScopes = "resource:read,resource:write";
                         Set<Role> roles = attemptedUser.getRoles();
                         Map<String, Object> result = new HashMap<>();
-                        result.put("tenantId", tenantId);
+                        result.put("tenantId", state);
                         result.put("subject", subject);
                         result.put("approvedScopes", approvedScopes);
                         result.put("roles", roles);

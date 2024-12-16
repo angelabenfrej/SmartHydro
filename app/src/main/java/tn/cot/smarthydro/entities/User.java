@@ -24,8 +24,8 @@ public class User implements Serializable {
     private String  creationDate;
     @Column("role")
     private Set<Role> roles ;
-    @Column("tenantId")
-    private String tenantId;
+    @Column("isAccountActivated")
+    private boolean isAccountActivated;
 
     public String getId() {return id;}
 
@@ -37,7 +37,7 @@ public class User implements Serializable {
 
     public Set<Role> getRoles() {return roles;}
 
-    public String getTenantId() {return tenantId;}
+    public boolean getAccountActivated() {return isAccountActivated;}
 
     public void setEmail(String email) {this.email = email;}
 
@@ -49,22 +49,20 @@ public class User implements Serializable {
 
     public void setRoles(Set<Role> roles) {this.roles = roles;}
 
-    public void setTenantId(String tenantId) {this.tenantId = tenantId;}
+    public void setAccountActivated(boolean accountActivated) {this.isAccountActivated = accountActivated;}
 
     public User() {
         this.id = UUID.randomUUID().toString();
-        this.tenantId = "WOT-CLIENTS";
-
+        this.isAccountActivated = false;
     }
 
-    public User(String id, String email, String password, String creationDate, Set<Role> roles, String tenantId) {
+    public User(String id, String email, String password, String creationDate, Set<Role> roles, boolean isAccountActivated) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.creationDate = creationDate;
-        this.tenantId = tenantId;
         this.roles = roles;
-
+        this.isAccountActivated = isAccountActivated;
     }
 
     @Override
@@ -75,7 +73,7 @@ public class User implements Serializable {
                 "password='" + password + '\'' +
                 "creationDate=" + creationDate +
                 "roles=" + roles +
-                "tenantId='" + tenantId + '\'' +
+                "accoutActivated=" + isAccountActivated +
                 '}';
     }
 
