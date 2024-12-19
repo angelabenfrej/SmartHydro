@@ -10,7 +10,7 @@
 
     <packaging>war</packaging>
     <name>smart-hydro</name>
-    <description>Smart Hydroponic Farm Monitoring.</description>
+    <description>Identity and Access Management Of Smart Hydroponic Farm Monitoring Application.</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

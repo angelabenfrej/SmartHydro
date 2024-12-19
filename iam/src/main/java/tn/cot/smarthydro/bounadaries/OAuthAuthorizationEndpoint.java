@@ -4,14 +4,15 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import tn.cot.smarthydro.utils.Oauth2Pkce;
-
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+
 @Path("/")
 public class OAuthAuthorizationEndpoint {
+
 
     @Inject
     Oauth2Pkce oauth2Pkce;
@@ -50,6 +51,29 @@ public class OAuthAuthorizationEndpoint {
             }
         };
         return Response.ok().entity(stream).build();
+    }
+
+
+
+
+
+
+
+    private Response informUserAboutError(String error) {
+        return Response.status(Response.Status.BAD_REQUEST).entity("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8"/>
+                    <title>Error</title>
+                </head>
+                <body>
+                <aside class="container">
+                    <p>%s</p>
+                </aside>
+                </body>
+                </html>
+                """.formatted(error)).build();
     }
 }
 

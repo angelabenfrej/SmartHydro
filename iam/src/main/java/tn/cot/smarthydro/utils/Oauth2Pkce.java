@@ -1,8 +1,11 @@
 package tn.cot.smarthydro.utils;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import tn.cot.smarthydro.entities.User;
+import jakarta.inject.Inject;
+import tn.cot.smarthydro.entities.Identity;
 import tn.cot.smarthydro.enums.Role;
+import tn.cot.smarthydro.repositories.IamRepository;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
@@ -13,16 +16,19 @@ public class Oauth2Pkce {
 
     private final Map<String, String> challenges = new HashMap<>();
     private final Map<String, String> authorizationsCodes = new HashMap<>();
-    private final Map<String, User> AttemptsUsers = new HashMap<>();
+    private final Map<String, Identity> AttemptsUsers = new HashMap<>();
 
     public void addChallenge(String state, String codeChallenge) {
         challenges.put(codeChallenge, state);
     }
 
-    public String generateAuthorizationCode(String state, User user) {
+    @Inject
+    IamRepository iamRepository;
+
+    public String generateAuthorizationCode(String state, Identity identity) {
         String authCode = UUID.randomUUID().toString();
         authorizationsCodes.put(state, authCode);
-        AttemptsUsers.put(authCode, user);
+        AttemptsUsers.put(authCode, identity);
         return authCode;
     }
     public Map<String, Object> CheckChallenge(String code, String codeVerifier) throws Exception {
@@ -38,11 +44,11 @@ public class Oauth2Pkce {
                 if (authorizationsCodes.get(state).equals(code)) {
                     authorizationsCodes.remove(state);
                     challenges.remove(key);
-                    User attemptedUser = AttemptsUsers.remove(code);
-                    if (attemptedUser != null) {
-                        String subject = attemptedUser.getEmail();
-                        String approvedScopes = "resource:read,resource:write";
-                        Set<Role> roles = attemptedUser.getRoles();
+                    Identity attemptedIdentity = AttemptsUsers.remove(code);
+                    if (attemptedIdentity != null) {
+                        String subject = attemptedIdentity.getUsername();
+                        String approvedScopes = attemptedIdentity.getScopes();
+                        String[] roles = iamRepository.getRoles(subject);
                         Map<String, Object> result = new HashMap<>();
                         result.put("tenantId", state);
                         result.put("subject", subject);

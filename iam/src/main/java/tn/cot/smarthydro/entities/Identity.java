@@ -3,31 +3,36 @@ package tn.cot.smarthydro.entities;
 import jakarta.nosql.Column;
 import jakarta.nosql.Entity;
 import jakarta.nosql.Id;
-import tn.cot.smarthydro.enums.Role;
 import tn.cot.smarthydro.utils.Argon2Utils;
 
 import java.io.Serializable;
-import java.util.Set;
+import java.security.Principal;
 import java.util.UUID;
 
 
-@Entity
-public class User implements Serializable {
+@Entity("identities")
+public class Identity implements Serializable, Principal {
     @Id
     @Column("id")
     private String id;
-    @Column("email")
+    @Column("username")
+    private String username;
+    @Column
     private String email;
     @Column("password")
     private String password;
     @Column("creationDate")
     private String  creationDate;
     @Column("role")
-    private Set<Role> roles ;
+    private Long roles;
+    @Column("scopes")
+    private String scopes;
     @Column("isAccountActivated")
     private boolean isAccountActivated;
 
     public String getId() {return id;}
+
+    public String getUsername() {return username;}
 
     public String getEmail() {return email;}
 
@@ -35,9 +40,13 @@ public class User implements Serializable {
 
     public String getCreationDate() {return creationDate;}
 
-    public Set<Role> getRoles() {return roles;}
+    public Long getRoles() {return roles;}
+
+    public String getScopes() {return scopes;}
 
     public boolean getAccountActivated() {return isAccountActivated;}
+
+    public void setUsername(String username) {this.username = username;}
 
     public void setEmail(String email) {this.email = email;}
 
@@ -47,18 +56,20 @@ public class User implements Serializable {
 
     public void setCreationDate(String creationDate) {this.creationDate = creationDate;}
 
-    public void setRoles(Set<Role> roles) {this.roles = roles;}
+    public void setRoles(Long roles) {this.roles = roles;}
+
+    public void setScopes(String scopes) {this.scopes = scopes;}
 
     public void setAccountActivated(boolean accountActivated) {this.isAccountActivated = accountActivated;}
 
-    public User() {
+    public Identity() {
         this.id = UUID.randomUUID().toString();
         this.isAccountActivated = false;
     }
 
-    public User(String id, String email, String password, String creationDate, Set<Role> roles, boolean isAccountActivated) {
+    public Identity(String id, String username, String password, String creationDate, Long roles, boolean isAccountActivated) {
         this.id = id;
-        this.email = email;
+        this.username = username;
         this.password = password;
         this.creationDate = creationDate;
         this.roles = roles;
@@ -67,17 +78,24 @@ public class User implements Serializable {
 
     @Override
     public String toString() {
-        return "User{" +
+        return "Identity{" +
                 "id='" + id + '\'' +
-                "email='" + email + '\'' +
+                "username='" + username + '\'' +
                 "password='" + password + '\'' +
                 "creationDate=" + creationDate +
                 "roles=" + roles +
+                "scopes=" + scopes +
                 "accoutActivated=" + isAccountActivated +
                 '}';
+    }
+
+    @Override
+    public String getName() {
+        return username;
     }
 
     public void hashPassword(String password, Argon2Utils argonUtility) {
         this.password = argonUtility.hash(password.toCharArray());
     }
+
 }

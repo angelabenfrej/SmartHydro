@@ -31,11 +31,8 @@ public class OAuthTokenEndpoint {
             String tenantId = (String) cred.get("tenantId");
             String subject = (String) cred.get("subject");
             String approvedScopes = (String) cred.get("approvedScopes");
-            Set<Role> roles = (Set<Role>) cred.get("roles");
-            String[] rolesArray = roles.stream()
-                   .map(Role::name)
-                    .toArray(String[]::new);
-            var token =  jwtManager.generateToken(tenantId, subject, approvedScopes, rolesArray);
+            String[] roles = (String[]) cred.get("roles");
+            var token =  jwtManager.generateToken(tenantId, subject, approvedScopes, roles);
             return Response
                     .ok(Json.createObjectBuilder()
                             .add("accessToken", token)

@@ -3,25 +3,22 @@ package tn.cot.smarthydro.services;
 import jakarta.ejb.EJBException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.tuple.Pair;
-import tn.cot.smarthydro.entities.User;
-import tn.cot.smarthydro.enums.Role;
-import tn.cot.smarthydro.repositories.UserRepository;
+import tn.cot.smarthydro.entities.Identity;
+import tn.cot.smarthydro.repositories.IdentityRepository;
 import tn.cot.smarthydro.utils.Argon2Utils;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @ApplicationScoped
-public class UserServices {
+public class IdentityServices {
 
     @Inject
-    UserRepository userRepository;
+    IdentityRepository identityRepository;
     @Inject
     Argon2Utils argon2Utils;
     @Inject
@@ -29,20 +26,21 @@ public class UserServices {
 
     private final Map<String, Pair<String, LocalDateTime>> activationCodes = new HashMap<>();
 
-    public void registerUser(@Valid User user)  {
+    public void registerUser(@Valid Identity identity)  {
 
-        if(userRepository.findByEmail(user.getEmail()).isPresent()){
-            throw new EJBException("User with username " + user.getEmail() + " already exists");
+        if(identityRepository.findByUsername(identity.getUsername()).isPresent()){
+            throw new EJBException("Identity with username " + identity.getUsername() + " already exists");
         }
-        user.setCreationDate(LocalDateTime.now().toLocalDate().toString());
-        user.setRoles(Collections.singleton(Role.USER));
-        user.hashPassword(user.getPassword(), argon2Utils);
-        userRepository.save(user);
+        identity.setCreationDate(LocalDateTime.now().toLocalDate().toString());
+        identity.setRoles(2L);
+        identity.setScopes("resource:read,resource:write");
+        identity.hashPassword(identity.getPassword(), argon2Utils);
+        identityRepository.save(identity);
         String activationCode = GenerateActivationCode();
         LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(5); // Set expiration time
-        activationCodes.put(activationCode, Pair.of(user.getEmail(),expirationTime));
+        activationCodes.put(activationCode, Pair.of(identity.getEmail(),expirationTime));
         String message= "Welcome to Smart Hydro the best solution to monitor your Hydroponic Farm !! . Activate your account now and start your journey with Us .Here is your Activation Code: " + activationCode;
-        emailService.sendEmail("smarthydro.services@gmail.com", user.getEmail(), "Activate Account", message);
+        emailService.sendEmail("smarthydro.services@gmail.com", identity.getEmail(), "Activate Account", message);
     }
 
     public void activateUser(String code) {
@@ -54,25 +52,25 @@ public class UserServices {
                 throw new EJBException("Activation code expired");
             }
             String email = codeDetails.getLeft();
-            User user = userRepository.findByEmail(email).orElse(null);
-            if (user!=null) {
-                user.setAccountActivated(true);
-                userRepository.save(user);
+            Identity identity = identityRepository.findByEmail(email).orElse(null);
+            if (identity !=null) {
+                identity.setAccountActivated(true);
+                identityRepository.save(identity);
                 activationCodes.remove(code);
             } else {
-                throw new EJBException("User not found.");
+                throw new EJBException("Identity not found.");
             }
         }else {
             throw new EJBException("Activation code not found");
         }
     }
 
-    public User authenticateUser(String email, String password) {
-        final User user = userRepository.findByEmail(email).orElseThrow(() -> new EJBException("User not found"));
-        if(user != null && argon2Utils.check(user.getPassword(), password.toCharArray()) && user.getAccountActivated()==true){
-            return user;
+    public Identity authenticateIdentity(String username, String password) {
+        final Identity identity = identityRepository.findByUsername(username).orElseThrow(() -> new EJBException("Identity not found"));
+        if(identity != null && argon2Utils.check(identity.getPassword(), password.toCharArray()) && identity.getAccountActivated()==true){
+            return identity;
         }
-        throw new EJBException("Failed log in with email: " + email + " [Unknown email or wrong password]");
+        throw new EJBException("Failed log in with username: " + username + " [Unknown username or wrong password]");
     }
 
     private String GenerateActivationCode() {
