@@ -47,12 +47,8 @@ public enum Role {
             throw new IllegalArgumentException("Illegal config value for roles");
         }
         ids.putAll(customRoles.stream().collect(Collectors.toMap(x -> id.getAndUpdate(y -> 2L*y),Function.identity())));
-        ids.put(GUEST.value, GUEST.name().toLowerCase());
-        ids.put(ROOT.value, ROOT.name().toLowerCase());
         final AtomicInteger ordinal = new AtomicInteger(1);
         final Role[] values = Role.values();
-        byIds.put(GUEST.name().toLowerCase(),GUEST);
-        byIds.put(ROOT.name().toLowerCase(),ROOT);
         byIds.putAll(customRoles.stream().collect(Collectors.toMap(Function.identity(),x -> values[ordinal.getAndIncrement()])));
     }
 

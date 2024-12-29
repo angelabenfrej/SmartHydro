@@ -50,7 +50,7 @@ public class Oauth2Pkce {
                         String approvedScopes = attemptedIdentity.getScopes();
                         String[] roles = iamRepository.getRoles(subject);
                         Map<String, Object> result = new HashMap<>();
-                        result.put("tenantId", state);
+                        result.put("tenantId", "smarthydropwa");
                         result.put("subject", subject);
                         result.put("approvedScopes", approvedScopes);
                         result.put("roles", roles);

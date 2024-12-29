@@ -19,7 +19,7 @@ public class IdentityRegistration {
     @Path("/register")
     public Response register(@Valid Identity identity) {
         try {
-            identityServices.registerUser(identity);
+            identityServices.registerIdentity(identity);
             return Response.status(Response.Status.CREATED)
                     .entity("{\"message\": \"Activation Code is sent to your Email : " + identity.getEmail() + "\"}")
                     .type(MediaType.APPLICATION_JSON)
@@ -37,7 +37,7 @@ public class IdentityRegistration {
     public Response activate(@PathParam("activation_code") String code) {
         String numericCode = code.replaceAll("[^\\d]", "");
         try {
-            identityServices.activateUser(numericCode);
+            identityServices.activateIdentity(numericCode);
             return Response.ok("{\"message\": \"Identity successfully activated.\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();

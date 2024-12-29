@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.tuple.Pair;
 import tn.cot.smarthydro.entities.Identity;
+import tn.cot.smarthydro.enums.Role;
 import tn.cot.smarthydro.repositories.IdentityRepository;
 import tn.cot.smarthydro.utils.Argon2Utils;
 
@@ -26,13 +27,13 @@ public class IdentityServices {
 
     private final Map<String, Pair<String, LocalDateTime>> activationCodes = new HashMap<>();
 
-    public void registerUser(@Valid Identity identity)  {
+    public void registerIdentity(@Valid Identity identity)  {
 
         if(identityRepository.findByUsername(identity.getUsername()).isPresent()){
             throw new EJBException("Identity with username " + identity.getUsername() + " already exists");
         }
         identity.setCreationDate(LocalDateTime.now().toLocalDate().toString());
-        identity.setRoles(2L);
+        identity.setRoles(Role.R_P00.getValue());
         identity.setScopes("resource:read,resource:write");
         identity.hashPassword(identity.getPassword(), argon2Utils);
         identityRepository.save(identity);
@@ -43,16 +44,18 @@ public class IdentityServices {
         emailService.sendEmail("smarthydro.services@gmail.com", identity.getEmail(), "Activate Account", message);
     }
 
-    public void activateUser(String code) {
+    public void activateIdentity(String code) {
         if (activationCodes.containsKey(code)) {
             Pair<String, LocalDateTime> codeDetails = activationCodes.get(code);
             LocalDateTime expirationTime = codeDetails.getRight();
-            if (LocalDateTime.now().isAfter(expirationTime)) {
-                activationCodes.remove(code);
-                throw new EJBException("Activation code expired");
-            }
             String email = codeDetails.getLeft();
             Identity identity = identityRepository.findByEmail(email).orElse(null);
+            if (LocalDateTime.now().isAfter(expirationTime)) {
+                activationCodes.remove(code);
+                identityRepository.delete(identity);
+                throw new EJBException("Activation code expired");
+            }
+
             if (identity !=null) {
                 identity.setAccountActivated(true);
                 identityRepository.save(identity);

@@ -8,6 +8,8 @@ import jakarta.ejb.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +18,8 @@ import java.time.Instant;
 import java.util.*;
 
 @Startup
-@ApplicationScoped
+@Singleton
+@LocalBean
 public class JwtManager {
     private final static String curve = "Ed25519";
     private final static KeyPairGenerator keyPairGenerator;
@@ -34,11 +37,12 @@ public class JwtManager {
 
     private final Map<String, KeyPair> cachedKeyPairs = new HashMap<>();
     private final Map<String, Long> keyPairExpires = new HashMap<>();
-    private final long keyPairLifeTime = 10800;
-    private final long jwtLifeTime = 1020;
-    private final long maxCacheSize = 3;
+    private static final Config config = ConfigProvider.getConfig();
+    private final long keyPairLifeTime =config.getValue("key.pair.lifetime.duration",Integer.class);
+    private final long jwtLifeTime =config.getValue("jwt.lifetime.duration",Integer.class);
+    private final long maxCacheSize =config.getValue("key.pair.cache.size",Integer.class);
     private final Set<String> audiences = Set.of("urn:me.smarthydro.www","urn:me.smarthydro.admin","urn:me:smarthydro:api");
-    private final String issuer = "urn:me.smarthydro.iam";
+    private final String issuer =config.getValue("jwt.issuer",String.class);
 
     private void generateKeyPair() {
         var kid = UUID.randomUUID().toString();
