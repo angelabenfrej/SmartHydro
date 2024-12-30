@@ -3,7 +3,7 @@ package tn.cot.smarthydro.entities;
 import jakarta.nosql.Column;
 import jakarta.nosql.Entity;
 import jakarta.nosql.Id;
-import tn.cot.smarthydro.utils.Argon2Utils;
+import tn.cot.smarthydro.security.Argon2Utils;
 
 import java.io.Serializable;
 import java.security.Principal;

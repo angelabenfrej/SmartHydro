@@ -1,4 +1,4 @@
-package tn.cot.smarthydro.utils;
+package tn.cot.smarthydro.security;
 
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;

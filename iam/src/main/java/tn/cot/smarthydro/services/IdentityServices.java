@@ -8,7 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import tn.cot.smarthydro.entities.Identity;
 import tn.cot.smarthydro.enums.Role;
 import tn.cot.smarthydro.repositories.IdentityRepository;
-import tn.cot.smarthydro.utils.Argon2Utils;
+import tn.cot.smarthydro.security.Argon2Utils;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -27,11 +27,18 @@ public class IdentityServices {
 
     private final Map<String, Pair<String, LocalDateTime>> activationCodes = new HashMap<>();
 
-    public void registerIdentity(@Valid Identity identity)  {
+    public void registerIdentity(String username, String password, String email){
 
-        if(identityRepository.findByUsername(identity.getUsername()).isPresent()){
-            throw new EJBException("Identity with username " + identity.getUsername() + " already exists");
+        if(identityRepository.findByUsername(username).isPresent()){
+            throw new EJBException("Identity with username " + username + " already exists");
         }
+        if(identityRepository.findByEmail(email).isPresent()){
+            throw new EJBException("Identity with email " + email + " already exists");
+        }
+        Identity identity = new Identity();
+        identity.setUsername(username);
+        identity.setPassword(password);
+        identity.setEmail(email);
         identity.setCreationDate(LocalDateTime.now().toLocalDate().toString());
         identity.setRoles(Role.R_P00.getValue());
         identity.setScopes("resource:read,resource:write");
@@ -66,14 +73,6 @@ public class IdentityServices {
         }else {
             throw new EJBException("Activation code not found");
         }
-    }
-
-    public Identity authenticateIdentity(String username, String password) {
-        final Identity identity = identityRepository.findByUsername(username).orElseThrow(() -> new EJBException("Identity not found"));
-        if(identity != null && argon2Utils.check(identity.getPassword(), password.toCharArray()) && identity.getAccountActivated()==true){
-            return identity;
-        }
-        throw new EJBException("Failed log in with username: " + username + " [Unknown username or wrong password]");
     }
 
     private String GenerateActivationCode() {

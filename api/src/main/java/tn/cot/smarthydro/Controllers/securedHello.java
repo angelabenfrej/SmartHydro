@@ -17,6 +17,7 @@ public class securedHello {
     public Response helloAdmin() {
         return Response.ok("Hello this is Admin Ressource !").build();
     }
+
     @Secured
     @GET
     @RolesAllowed({"Admin","Client"})

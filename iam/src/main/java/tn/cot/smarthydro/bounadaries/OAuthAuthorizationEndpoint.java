@@ -1,25 +1,35 @@
 package tn.cot.smarthydro.bounadaries;
 
-import jakarta.ejb.EJBException;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import tn.cot.smarthydro.entities.Identity;
 import tn.cot.smarthydro.repositories.IdentityRepository;
 import tn.cot.smarthydro.repositories.TenantRepository;
-import tn.cot.smarthydro.utils.Argon2Utils;
-import tn.cot.smarthydro.utils.Oauth2Pkce;
+import tn.cot.smarthydro.security.AuthorizationCode;
+import tn.cot.smarthydro.security.Argon2Utils;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 
 @Path("/")
+@RequestScoped
 public class OAuthAuthorizationEndpoint {
 
     public static final String CHALLENGE_RESPONSE_COOKIE_ID = "signInId";
     @Inject
-    Oauth2Pkce oauth2Pkce;
+    Argon2Utils argon2Utils;
     @Inject
     TenantRepository tenantRepository;
+    @Inject
+    IdentityRepository identityRepository;
 
     @GET
     @Path("/authorize")
@@ -62,34 +72,76 @@ public class OAuthAuthorizationEndpoint {
             String error = "invalid_grant :" + codeChallengeMethod + ", code_challenge_method must be 'S256'";
             return informUserAboutError(error);
         }
-        var state = params.getFirst("state");
-        var code_challenge = params.getFirst("code_challenge");
-        oauth2Pkce.addChallenge(state, code_challenge);
-        URI redirect = UriBuilder.fromPath("/login/authorization").build();
-        return Response.status(Response.Status.FOUND)
-                .location(redirect)
+        StreamingOutput stream = output -> {
+            try (InputStream is = Objects.requireNonNull(getClass().getResource("/login.html")).openStream()){
+                output.write(is.readAllBytes());
+            }
+        };
+        return Response.ok(stream).location(uriInfo.getBaseUri().resolve("/login/authorization"))
                 .cookie(new NewCookie.Builder(CHALLENGE_RESPONSE_COOKIE_ID)
-                        .httpOnly(true).secure(true).sameSite(NewCookie.SameSite.STRICT).value(state+"#"+tenant.getName()+"$"+redirectUri).build()).build();
+                        .httpOnly(true).secure(true).sameSite(NewCookie.SameSite.STRICT).value(tenant.getName()+"#"+requestedScope+"$"+redirectUri).build()).build();
     }
 
-    @GET
+    @POST
     @Path("/login/authorization")
-    public Response loginAuthorization() {
-            StreamingOutput stream = (output)->{
-                try(var resourceStream = getClass().getResourceAsStream("/signin.html")){
-                    assert resourceStream != null;
-                    output.write(resourceStream.readAllBytes());
-                }
-            };
-            return Response.ok()
-                    .entity(stream)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_HTML)
+    public Response login(@CookieParam(CHALLENGE_RESPONSE_COOKIE_ID) Cookie cookie,
+                          @FormParam("username")String username,
+                          @FormParam("password")String password,
+                          @Context UriInfo uriInfo) throws Exception {
+
+        Identity  identity = identityRepository.findByUsername(username).get();
+        if (argon2Utils.check(identity.getPassword(), password.toCharArray())) {
+            MultivaluedMap<String, String> params = uriInfo.getQueryParameters();
+            String redirectURI = buildActualRedirectURI(
+                    cookie.getValue().split("\\$")[1],
+                    params.getFirst("response_type"),
+                    cookie.getValue().split("#")[0],
+                    username,
+                    "resource.read,resource.write",
+                    params.getFirst("code_challenge"), params.getFirst("state")
+            );
+            return Response.seeOther(UriBuilder.fromUri(redirectURI).build()).build();
+        } else {
+            URI location = UriBuilder.fromUri(cookie.getValue().split("\\$")[1])
+                    .queryParam("error", "User doesn't approved the request.")
+                    .queryParam("error_description", "User doesn't approved the request.")
                     .build();
+            return Response.seeOther(location).build();
+        }
+    }
+
+    private String buildActualRedirectURI(String redirectUri,String responseType,String clientId,String userId,String approvedScopes,String codeChallenge,String state) throws Exception {
+        StringBuilder sb = new StringBuilder(redirectUri);
+        if ("code".equals(responseType)) {
+            AuthorizationCode authorizationCode = new AuthorizationCode(clientId,userId,
+                    approvedScopes, Instant.now().plus(2, ChronoUnit.MINUTES).getEpochSecond(),redirectUri);
+            sb.append("?code=").append(URLEncoder.encode(authorizationCode.getCode(codeChallenge), StandardCharsets.UTF_8));
+        } else {
+            return null;
+        }
+        if (state != null) {
+            sb.append("&state=").append(state);
+        }
+        return sb.toString();
     }
 
     private Response informUserAboutError(String error) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("{\"message\":\""+error+"\"}")
-                .build();
+        return Response.status(Response.Status.BAD_REQUEST).entity("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8"/>
+                    <title>Error</title>
+                </head>
+                <body>
+                <aside class="container">
+                    <p>%s</p>
+                </aside>
+                </body>
+                </html>
+                """.formatted(error)).build();
     }
 }
 
