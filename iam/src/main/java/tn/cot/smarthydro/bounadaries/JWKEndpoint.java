@@ -2,7 +2,6 @@ package tn.cot.smarthydro.bounadaries;
 
 import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
-import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;

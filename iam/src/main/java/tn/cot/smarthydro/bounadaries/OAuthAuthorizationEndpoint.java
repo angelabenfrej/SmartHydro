@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Objects;
 
 
@@ -79,7 +80,13 @@ public class OAuthAuthorizationEndpoint {
         };
         return Response.ok(stream).location(uriInfo.getBaseUri().resolve("/login/authorization"))
                 .cookie(new NewCookie.Builder(CHALLENGE_RESPONSE_COOKIE_ID)
-                        .httpOnly(true).secure(true).sameSite(NewCookie.SameSite.STRICT).value(tenant.getName()+"#"+requestedScope+"$"+redirectUri).build()).build();
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite(NewCookie.SameSite.STRICT)
+                        .value(tenant.getName()+"#"+requestedScope+"$"+redirectUri)
+                        .expiry(Date.from(Instant.now().plus(17, ChronoUnit.MINUTES)))
+                        .build())
+                .build();
     }
 
     @POST
@@ -90,8 +97,13 @@ public class OAuthAuthorizationEndpoint {
                           @FormParam("username")String username,
                           @FormParam("password")String password,
                           @Context UriInfo uriInfo) throws Exception {
-
-        Identity  identity = identityRepository.findByUsername(username).get();
+        Identity identity;
+        try{
+            identity = identityRepository.findByUsername(username).get();
+        }
+        catch (Exception e){
+            return informUserAboutError("Invalid username :" + username);
+        }
         if (argon2Utils.check(identity.getPassword(), password.toCharArray())) {
             MultivaluedMap<String, String> params = uriInfo.getQueryParameters();
             String redirectURI = buildActualRedirectURI(
@@ -144,6 +156,3 @@ public class OAuthAuthorizationEndpoint {
                 """.formatted(error)).build();
     }
 }
-
-
-

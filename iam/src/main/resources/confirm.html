@@ -162,9 +162,17 @@
             fetch(`${confirmForm.action}`, options)
                 .then((response) => {
                     if (response.ok) {
-                        alert("account created succesfully")
-                        window.location.href = "https://smarthydro.lme:8443";
+                        const container = document.getElementById("container");
+                        container.innerHTML = `
+                            <div class="auth-layout">
+                                <h1>Account Activated Sucessfully !</h1>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            window.location.href = "https://smarthydro.lme:8443";
+                        }, 3000);
                     }
+
                 })
                 .catch((err) => {
                     console.info(err + " url: " + `${confirmForm.action}`);
@@ -174,7 +182,7 @@
     </script>
 </head>
 <body>
-<div class="auth-layout">
+<div id= "container" class="auth-layout">
     <h1>Activate Account</h1>
     <p>Confirmation code is sent to your Email</p>
     <form method="post" action="/rest-iam/register/activate" class="signin-form needs-validation" id="confirmForm" novalidate>
