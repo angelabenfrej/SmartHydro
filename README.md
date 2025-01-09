@@ -7,6 +7,7 @@
 - **Frontend**: Progressive Web Application (PWA)  
 - **Middleware**: Jakarta EE  
 - **Backend**: MongoDB + MQTT Broker
+- **Machine Learning**: Tomato disease detection model (stored in the `model` folder)  
 - **IoT Integration**: Sensors for real-time data collection (e.g., pH, temperature, humidity)  
 
 ---
@@ -20,7 +21,11 @@
 ![Sign Up Screenshot](/pwa/images/signup.jpeg)  
 
 ### Dashboard  
-![Dashboard Screenshot](/pwa/images/dashboard.png)  
+![Dashboard Screenshot](/pwa/images/dashboard.png) 
+
+### Tomato Disease Detection  
+The integrated ML model detects tomato diseases effectively. Below is a screenshot of the feature:  
+![Tomato Disease Detection Screenshot](/pwa/images/disease-detected.png)  
 
 ## 🔒 SSL Certification  
 SmartHydro ensures secure communication with SSL certification. Below is a screenshot verifying the SSL certification:  
